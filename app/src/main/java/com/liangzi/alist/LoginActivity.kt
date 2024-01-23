@@ -45,8 +45,8 @@ class LoginActivity : ComponentActivity() {
                 Thread {
                     val json = OkHttpClient().newCall(request).execute().body()?.string()
                     runOnUiThread {
-                        Toast.makeText(this, json, Toast.LENGTH_SHORT).show()
                         if (json == "pong") {
+                            Toast.makeText(this, json, Toast.LENGTH_SHORT).show()
                             getSharedPreferences("config", MODE_PRIVATE).edit()
                                 .putString("host", host).apply()
                             startActivity(Intent(this, MainActivity::class.java))
