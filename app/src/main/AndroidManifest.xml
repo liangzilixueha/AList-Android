@@ -15,10 +15,18 @@
         android:theme="@style/Theme.Alist"
         tools:targetApi="31">
         <activity
+            android:name=".TempActivity"
+            android:exported="true"
+            android:label="@string/title_activity_temp"
+            android:theme="@style/Theme.Alist" >
+
+        </activity>
+        <activity
             android:name=".LoginActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.Alist">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -29,9 +37,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Alist">
-
-        </activity>
+            android:theme="@style/Theme.Alist" />
     </application>
 
 </manifest>

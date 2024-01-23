@@ -24,6 +24,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -32,50 +33,51 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.google.gson.Gson
+import com.liangzi.alist.data.FileItem
+import com.liangzi.alist.data.请求json
 import com.liangzi.alist.json.getListJson
 import com.liangzi.alist.tool.POST
 import com.liangzi.alist.ui.theme.AlistTheme
-import okhttp3.OkHttpClient
 
 class MainActivity : ComponentActivity() {
-    private var host = ""
-    private var 当前url = ""
-    val 需要密码 = "password is incorrect or you have no permission"
-    val fileItem = mutableStateOf(mutableListOf<FileItem>())
+    private var host = ""//域名
+    private var 当前url = ""//用于json请求中的path
+    val 需要密码 = "password is incorrect or you have no permission"//密码错误时返回的判断
+    val fileItem = mutableStateListOf<FileItem>()//文件列表
+    val needPassword = mutableStateOf(true)//是否需要密码的视图切换
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            AlistTheme {}
-        }
         host = getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
-        Thread {
-            val json = POST(
-                url = "$host/api/fs/list", json = Gson().toJson(请求json("/", "", 1, 100, false))
-            )
-            val list = Gson().fromJson(json, getListJson::class.java)
-            runOnUiThread {
-                if (list.message == 需要密码) {
-                    Toast.makeText(this, "请输入密码", Toast.LENGTH_SHORT).show()
-                    setContent {
-                        AlistTheme {
-                            Row {
-                                MyApp()
-                            }
-                        }
-                    }
+        setContent {
+            AlistTheme {
+                if (needPassword.value) {
+                    MyApp()
                 } else {
-                    setContent {
-                        AlistTheme {}
+                    Row {
+                        ShowFiles()
                     }
                 }
             }
-        }.start()
+        }
+    }
+
+    /**
+     * 显示文件列表
+     */
+    @Composable
+    fun ShowFiles() {
+        LazyColumn(content = {
+            items(fileItem.size) {
+                Row {
+                    Item(fileItem[it], 当前url)
+                }
+            }
+        })
     }
 
     @Composable
@@ -94,8 +96,6 @@ class MainActivity : ComponentActivity() {
             ) {
                 Text("访问需要密码")
             }
-
-            // 弹窗
             if (showDialog) {
                 MyDialog(onDismiss = { showDialog = false })
             }
@@ -147,10 +147,15 @@ class MainActivity : ComponentActivity() {
                                     Toast.makeText(context, "密码正确", Toast.LENGTH_SHORT).show()
                                     getSharedPreferences("config", MODE_PRIVATE).edit()
                                         .putString("password", password).apply()
-                                    setContent {
-                                        文件列表显示(list)
+                                    fileItem.clear()
+                                    list.data.content.forEach {
+                                        fileItem.add(
+                                            FileItem(
+                                                it.name, it.size.toString(), it.is_dir
+                                            )
+                                        )
                                     }
-
+                                    needPassword.value = false
                                 }
                             }
                         }.start()
@@ -164,34 +169,6 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun 文件列表显示(list: getListJson) {
-        AlistTheme {
-            fileItem.component1().clear()
-            list.data.content.forEach {
-                fileItem.component1().add(
-                    FileItem(
-                        it.name, it.size.toString(), it.is_dir
-                    )
-                )
-            }
-            Row {
-                FileList(fileItem.component1(), 当前url)
-            }
-        }
-    }
-
-    @Composable
-    fun FileList(list: List<FileItem>, dir: String) {
-        LazyColumn(content = {
-            items(list.size) {
-                Row {
-                    Item(list[it], dir)
-                }
-            }
-        })
-    }
-
-    @Composable
     fun Item(item: FileItem, dir: String) {
         Row(
             modifier = Modifier
@@ -199,11 +176,8 @@ class MainActivity : ComponentActivity() {
                 .height(80.dp)
                 .padding(15.dp)
                 .clickable {
-                    Toast
-                        .makeText(this, 当前url, Toast.LENGTH_SHORT)
-                        .show()
                     if (item.isDir) {
-                        当前url += "/"+item.name
+                        当前url += "/" + item.name
                         Thread {
                             val json = POST(
                                 url = "$host/api/fs/list",
@@ -220,12 +194,15 @@ class MainActivity : ComponentActivity() {
                                     )
                                 )
                             )
-                            Log.d("json", 当前url+json!!)
                             val list = Gson().fromJson(json, getListJson::class.java)
                             runOnUiThread {
-                                setContent {
-                                    Log.d("json", "重绘")
-                                    文件列表显示(list)
+                                fileItem.clear()
+                                list.data.content.forEach {
+                                    fileItem.add(
+                                        FileItem(
+                                            it.name, it.size.toString(), it.is_dir
+                                        )
+                                    )
                                 }
                             }
                         }.start()
@@ -266,19 +243,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-data class 请求json(
-    val path: String,
-    val password: String,
-    val page: Int,
-    val per_page: Int,
-    val refresh: Boolean
-)
 
-data class FileItem(
-    val name: String,
-    val size: String,
-    val isDir: Boolean
-)
 
 
 
