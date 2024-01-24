@@ -8,8 +8,18 @@ data class 请求json(
     val refresh: Boolean
 )
 
-data class FileItem(
-    val name: String,
-    val size: String,
-    val isDir: Boolean
-)
+class FileItem(val name: String, size: Long, val isDir: Boolean) {
+    val size: String
+
+    init {
+        when {
+            size == 0L -> this.size = "文件夹下无内容"
+            size < 1024 -> this.size = String.format("%.2f", size) + " B"
+            size < 1024 * 1024 -> this.size = String.format("%.2f", size / 1024.0) + " KB"
+            size < 1024 * 1024 * 1024 -> this.size =
+                String.format("%.2f", size / 1024.0 / 10024) + " MB"
+
+            else -> this.size = String.format("%.2f", size / 1024.0 / 1024 / 1024) + " GB"
+        }
+    }
+}

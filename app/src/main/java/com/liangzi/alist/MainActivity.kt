@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -33,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -45,7 +48,7 @@ import com.liangzi.alist.ui.theme.AlistTheme
 
 class MainActivity : ComponentActivity() {
     private var host = ""//域名
-    private var 当前url = ""//用于json请求中的path
+    private var 当前url = mutableStateOf("")//用于json请求中的path
     val 需要密码 = "password is incorrect or you have no permission"//密码错误时返回的判断
     val fileItem = mutableStateListOf<FileItem>()//文件列表
     val needPassword = mutableStateOf(true)//是否需要密码的视图切换
@@ -58,12 +61,68 @@ class MainActivity : ComponentActivity() {
                 if (needPassword.value) {
                     MyApp()
                 } else {
-                    Row {
+                    Column {
+                        PathBar(当前url.value)
                         ShowFiles()
                     }
                 }
             }
         }
+    }
+
+    @Composable
+    fun PathBar(path: String) {
+        val move = rememberScrollState()
+        Row(modifier = Modifier
+            .horizontalScroll(move)
+            ) {
+            path.split("/").forEach {
+                Button(onClick = {
+                    当前url.value = path.substring(0, path.indexOf(it) + it.length)
+                    Thread {
+                        val json = POST(
+                            url = "$host/api/fs/list",
+                            json = Gson().toJson(
+                                请求json(
+                                    path = 当前url.value,
+                                    getSharedPreferences("config", MODE_PRIVATE).getString(
+                                        "password",
+                                        ""
+                                    )!!,
+                                    1,
+                                    100,
+                                    false
+                                )
+                            )
+                        )
+                        val list = Gson().fromJson(json, getListJson::class.java)
+                        fileItem.clear()
+                        list.data.content.forEach {
+                            fileItem.add(
+                                FileItem(
+                                    it.name, it.size, it.is_dir
+                                )
+                            )
+                        }
+
+                    }.start()
+                }) {
+                    if (it.isEmpty()) {
+                        Text("根目录")
+                    } else {
+                        Text("/$it")
+                    }
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+        }
+    }
+
+    @Preview
+    @Composable
+    fun P() {
+        val s = "/微软/你好/212/ppp"
+        PathBar(s)
     }
 
     /**
@@ -74,7 +133,7 @@ class MainActivity : ComponentActivity() {
         LazyColumn(content = {
             items(fileItem.size) {
                 Row {
-                    Item(fileItem[it], 当前url)
+                    Item(fileItem[it], 当前url.value)
                 }
             }
         })
@@ -151,7 +210,7 @@ class MainActivity : ComponentActivity() {
                                     list.data.content.forEach {
                                         fileItem.add(
                                             FileItem(
-                                                it.name, it.size.toString(), it.is_dir
+                                                it.name, it.size, it.is_dir
                                             )
                                         )
                                     }
@@ -177,13 +236,13 @@ class MainActivity : ComponentActivity() {
                 .padding(15.dp)
                 .clickable {
                     if (item.isDir) {
-                        当前url += "/" + item.name
+                        当前url.value += "/" + item.name
                         Thread {
                             val json = POST(
                                 url = "$host/api/fs/list",
                                 json = Gson().toJson(
                                     请求json(
-                                        path = 当前url,
+                                        path = 当前url.value,
                                         getSharedPreferences("config", MODE_PRIVATE).getString(
                                             "password",
                                             ""
@@ -200,7 +259,7 @@ class MainActivity : ComponentActivity() {
                                 list.data.content.forEach {
                                     fileItem.add(
                                         FileItem(
-                                            it.name, it.size.toString(), it.is_dir
+                                            it.name, it.size, it.is_dir
                                         )
                                     )
                                 }
@@ -235,7 +294,7 @@ class MainActivity : ComponentActivity() {
             // 文件大小
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = item.size,
+                text = item.size.toString(),
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
             )
