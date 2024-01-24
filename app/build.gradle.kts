@@ -85,6 +85,8 @@ dependencies {
     implementation("com.google.code.gson:gson:2.8.9")
     implementation ("com.afollestad.material-dialogs:core:3.3.0")
     implementation ("com.afollestad.material-dialogs:input:3.3.0")
+    implementation ("xyz.doikki.android.dkplayer:dkplayer-java:3.3.7")
+    implementation ("xyz.doikki.android.dkplayer:dkplayer-ui:3.3.7")
 
 
 

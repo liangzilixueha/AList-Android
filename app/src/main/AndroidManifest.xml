@@ -15,18 +15,21 @@
         android:theme="@style/Theme.Alist"
         tools:targetApi="31">
         <activity
+            android:name=".PlayerActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat"
+            android:screenOrientation="portrait" /> <!-- or android:screenOrientation="landscape"-->
+        <activity
             android:name=".TempActivity"
             android:exported="true"
             android:label="@string/title_activity_temp"
-            android:theme="@style/Theme.Alist" >
-
-        </activity>
+            android:theme="@style/Theme.Alist"></activity>
         <activity
             android:name=".LoginActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.Alist">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

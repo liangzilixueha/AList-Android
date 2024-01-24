@@ -1,6 +1,7 @@
 package com.liangzi.alist
 
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -51,11 +53,40 @@ class MainActivity : ComponentActivity() {
     private var 当前url = mutableStateOf("")//用于json请求中的path
     val 需要密码 = "password is incorrect or you have no permission"//密码错误时返回的判断
     val fileItem = mutableStateListOf<FileItem>()//文件列表
-    val needPassword = mutableStateOf(true)//是否需要密码的视图切换
+    val needPassword = mutableStateOf(false)//是否需要密码的视图切换
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         host = getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
+        Thread {
+            val json = POST(
+                url = "$host/api/fs/list",
+                json = Gson().toJson(
+                    请求json(
+                        path = "/",
+                        getSharedPreferences("config", MODE_PRIVATE).getString("password", "")!!,
+                        1,
+                        100,
+                        false
+                    )
+                )
+            )
+            val list = Gson().fromJson(json, getListJson::class.java)
+            if (list.message == 需要密码) {
+                needPassword.value = true
+            } else {
+                fileItem.clear()
+                list.data.content.forEach {
+                    fileItem.add(
+                        FileItem(
+                            it.name, it.size, it.is_dir
+                        )
+                    )
+                }
+            }
+
+
+        }.start()
         setContent {
             AlistTheme {
                 if (needPassword.value) {
@@ -63,7 +94,14 @@ class MainActivity : ComponentActivity() {
                 } else {
                     Column {
                         PathBar(当前url.value)
-                        ShowFiles()
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .weight(1f)
+                        ) {
+                            ShowFiles()
+                        }
+                        BottomBar()
                     }
                 }
             }
@@ -71,11 +109,31 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    fun BottomBar() {
+        Row {
+            Button(onClick = { /*TODO*/ }, modifier = Modifier.weight(1f)) {
+                Text(text = "首页")
+            }
+            Button(onClick = { /*TODO*/ }, modifier = Modifier.weight(1f)) {
+                Text(text = "传输")
+            }
+            Button(onClick = { /*TODO*/ }, modifier = Modifier.weight(1f)) {
+                Text(text = "更多设置")
+            }
+        }
+    }
+
+
+    /**
+     * 显示路径
+     */
+    @Composable
     fun PathBar(path: String) {
         val move = rememberScrollState()
-        Row(modifier = Modifier
-            .horizontalScroll(move)
-            ) {
+        Row(
+            modifier = Modifier
+                .horizontalScroll(move)
+        ) {
             path.split("/").forEach {
                 Button(onClick = {
                     当前url.value = path.substring(0, path.indexOf(it) + it.length)
@@ -142,7 +200,6 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun MyApp() {
         var showDialog by remember { mutableStateOf(false) }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -227,6 +284,10 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+
+    /**
+     * 文件列表的每一项
+     */
     @Composable
     fun Item(item: FileItem, dir: String) {
         Row(
@@ -254,6 +315,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             )
                             val list = Gson().fromJson(json, getListJson::class.java)
+                            Log.d("点击项目", item.name+json!!)
                             runOnUiThread {
                                 fileItem.clear()
                                 list.data.content.forEach {
@@ -265,9 +327,15 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
                         }.start()
-                    } else {
+                    } else if(item.name.endsWith(".mp4")||item.name.endsWith(".mkv")){
+                        startActivity(
+                            Intent(this, PlayerActivity::class.java).apply {
+                                putExtra("url", 当前url.value + "/" + item.name)
+                            }
+                        )
+                    }else{
                         Toast
-                            .makeText(this, "该文件不是文件夹", Toast.LENGTH_SHORT)
+                            .makeText(this, "暂不支持预览", Toast.LENGTH_SHORT)
                             .show()
                     }
                 }
@@ -294,7 +362,7 @@ class MainActivity : ComponentActivity() {
             // 文件大小
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = item.size.toString(),
+                text = item.size,
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
             )
