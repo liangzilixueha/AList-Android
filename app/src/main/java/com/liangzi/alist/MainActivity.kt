@@ -46,6 +46,8 @@ import com.liangzi.alist.data.FileItem
 import com.liangzi.alist.data.请求json
 import com.liangzi.alist.json.getListJson
 import com.liangzi.alist.tool.POST
+import com.liangzi.alist.ui.FileListItem
+import com.liangzi.alist.ui.PopDialog
 import com.liangzi.alist.ui.theme.AlistTheme
 
 class MainActivity : ComponentActivity() {
@@ -220,68 +222,47 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun MyDialog(onDismiss: () -> Unit) {
-        var password by remember { mutableStateOf("") }
         val context = LocalContext.current
         val host = context.getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
-        Dialog(
-            onDismissRequest = { onDismiss() },
-            properties = DialogProperties(dismissOnClickOutside = false)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp)
-            ) {
-                TextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("密码") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        Thread {
-                            val json = POST(
-                                url = "$host/api/fs/list",
-                                json = Gson().toJson(
-                                    请求json(
-                                        "/",
-                                        password,
-                                        1,
-                                        100,
-                                        false
+        object :PopDialog(){
+            override fun click() {
+                Thread {
+                    val json = POST(
+                        url = "$host/api/fs/list",
+                        json = Gson().toJson(
+                            请求json(
+                                "/",
+                                this.password,
+                                1,
+                                100,
+                                false
+                            )
+                        )
+                    )
+                    val list = Gson().fromJson(json, getListJson::class.java)
+                    runOnUiThread {
+                        if (list.message == 需要密码) {
+                            Toast.makeText(context, "密码错误", Toast.LENGTH_SHORT).show()
+                            return@runOnUiThread
+                        } else {
+                            Toast.makeText(context, "密码正确", Toast.LENGTH_SHORT).show()
+                            getSharedPreferences("config", ComponentActivity.MODE_PRIVATE).edit()
+                                .putString("password", this.password).apply()
+                            fileItem.clear()
+                            list.data.content.forEach {
+                                fileItem.add(
+                                    FileItem(
+                                        it.name, it.size, it.is_dir
                                     )
                                 )
-                            )
-                            val list = Gson().fromJson(json, getListJson::class.java)
-                            runOnUiThread {
-                                if (list.message == 需要密码) {
-                                    Toast.makeText(context, "密码错误", Toast.LENGTH_SHORT).show()
-                                    return@runOnUiThread
-                                } else {
-                                    Toast.makeText(context, "密码正确", Toast.LENGTH_SHORT).show()
-                                    getSharedPreferences("config", MODE_PRIVATE).edit()
-                                        .putString("password", password).apply()
-                                    fileItem.clear()
-                                    list.data.content.forEach {
-                                        fileItem.add(
-                                            FileItem(
-                                                it.name, it.size, it.is_dir
-                                            )
-                                        )
-                                    }
-                                    needPassword.value = false
-                                }
                             }
-                        }.start()
-                        onDismiss()
-                    }, modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) {
-                    Text("确认")
-                }
+                            needPassword.value = false
+                        }
+                    }
+                }.start()
+                onDismiss()
             }
-        }
+        }.PassWordDialog(onDismiss = onDismiss)
     }
 
 
@@ -290,83 +271,53 @@ class MainActivity : ComponentActivity() {
      */
     @Composable
     fun Item(item: FileItem, dir: String) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .padding(15.dp)
-                .clickable {
-                    if (item.isDir) {
-                        当前url.value += "/" + item.name
-                        Thread {
-                            val json = POST(
-                                url = "$host/api/fs/list",
-                                json = Gson().toJson(
-                                    请求json(
-                                        path = 当前url.value,
-                                        getSharedPreferences("config", MODE_PRIVATE).getString(
-                                            "password",
-                                            ""
-                                        )!!,
-                                        1,
-                                        100,
-                                        false
-                                    )
+        val context = LocalContext.current
+        object : FileListItem() {
+            override fun click() {
+                if (item.isDir) {
+                    当前url.value += "/" + item.name
+                    Thread {
+                        val json = POST(
+                            url = "$host/api/fs/list",
+                            json = Gson().toJson(
+                                请求json(
+                                    path = 当前url.value,
+                                    getSharedPreferences("config", MODE_PRIVATE).getString(
+                                        "password",
+                                        ""
+                                    )!!,
+                                    1,
+                                    100,
+                                    false
                                 )
                             )
-                            val list = Gson().fromJson(json, getListJson::class.java)
-                            Log.d("点击项目", item.name+json!!)
-                            runOnUiThread {
-                                fileItem.clear()
-                                list.data.content.forEach {
-                                    fileItem.add(
-                                        FileItem(
-                                            it.name, it.size, it.is_dir
-                                        )
-                                    )
-                                }
-                            }
-                        }.start()
-                    } else if(item.name.endsWith(".mp4")||item.name.endsWith(".mkv")){
-                        startActivity(
-                            Intent(this, PlayerActivity::class.java).apply {
-                                putExtra("url", 当前url.value + "/" + item.name)
-                            }
                         )
-                    }else{
-                        Toast
-                            .makeText(this, "暂不支持预览", Toast.LENGTH_SHORT)
-                            .show()
-                    }
+                        val list = Gson().fromJson(json, getListJson::class.java)
+                        Log.d("点击项目", item.name + json!!)
+                        runOnUiThread {
+                            fileItem.clear()
+                            list.data.content.forEach {
+                                fileItem.add(
+                                    FileItem(
+                                        it.name, it.size, it.is_dir
+                                    )
+                                )
+                            }
+                        }
+                    }.start()
+                } else if (item.name.endsWith(".mp4") || item.name.endsWith(".mkv")) {
+                    startActivity(
+                        Intent(context, PlayerActivity::class.java).apply {
+                            putExtra("url", 当前url.value + "/" + item.name)
+                        }
+                    )
+                } else {
+                    Toast
+                        .makeText(context, "暂不支持预览", Toast.LENGTH_SHORT)
+                        .show()
                 }
-        ) {
-            // 左侧图片
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(35.dp)
-                    .clip(MaterialTheme.shapes.small)
-                    .align(Alignment.CenterVertically)
-            )
-
-            // 文件名
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = item.name,
-                modifier = Modifier
-                    .weight(1f)
-                    .align(Alignment.CenterVertically)
-            )
-
-            // 文件大小
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = item.size,
-                modifier = Modifier
-                    .align(Alignment.CenterVertically)
-            )
-        }
+            }
+        }.Item(item, dir)
     }
 }
 
