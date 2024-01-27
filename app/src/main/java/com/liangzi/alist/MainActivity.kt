@@ -7,8 +7,6 @@ import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,17 +15,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.BottomAppBar
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,12 +38,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.google.gson.Gson
 import com.liangzi.alist.data.FileItem
 import com.liangzi.alist.data.请求json
@@ -56,6 +57,7 @@ class MainActivity : ComponentActivity() {
     val 需要密码 = "password is incorrect or you have no permission"//密码错误时返回的判断
     val fileItem = mutableStateListOf<FileItem>()//文件列表
     val needPassword = mutableStateOf(false)//是否需要密码的视图切换
+    private val whichButton = mutableIntStateOf(0) //底部导航栏的按钮
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,16 +114,53 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun BottomBar() {
-        Row {
-            Button(onClick = { /*TODO*/ }, modifier = Modifier.weight(1f)) {
-                Text(text = "首页")
-            }
-            Button(onClick = { /*TODO*/ }, modifier = Modifier.weight(1f)) {
-                Text(text = "传输")
-            }
-            Button(onClick = { /*TODO*/ }, modifier = Modifier.weight(1f)) {
-                Text(text = "更多设置")
-            }
+        NavigationBar(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            containerColor = Color.White,
+        ) {
+            NavigationBarItem(
+                selected = whichButton.intValue == 0,
+                onClick = {
+                    whichButton.intValue = 0
+                },
+                icon = {
+                    Icon(
+                        Icons.Default.Home,
+                        contentDescription = "Account",
+                        modifier = Modifier
+                            .clip(CircleShape)
+                    )
+                },
+            )
+            NavigationBarItem(
+                selected = whichButton.intValue == 1,
+                onClick = {
+                    whichButton.intValue = 1
+                },
+                icon = {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = "Account",
+                        modifier = Modifier
+                            .clip(CircleShape)
+                    )
+                },
+            )
+            NavigationBarItem(
+                selected = whichButton.intValue == 2,
+                onClick = {
+                    whichButton.intValue = 2
+                },
+                icon = {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = "Account",
+                        modifier = Modifier
+                    )
+                },
+            )
         }
     }
 
@@ -137,36 +176,38 @@ class MainActivity : ComponentActivity() {
                 .horizontalScroll(move)
         ) {
             path.split("/").forEach {
-                Button(onClick = {
-                    当前url.value = path.substring(0, path.indexOf(it) + it.length)
-                    Thread {
-                        val json = POST(
-                            url = "$host/api/fs/list",
-                            json = Gson().toJson(
-                                请求json(
-                                    path = 当前url.value,
-                                    getSharedPreferences("config", MODE_PRIVATE).getString(
-                                        "password",
-                                        ""
-                                    )!!,
-                                    1,
-                                    100,
-                                    false
+                Button(
+                    onClick = {
+                        当前url.value = path.substring(0, path.indexOf(it) + it.length)
+                        Thread {
+                            val json = POST(
+                                url = "$host/api/fs/list",
+                                json = Gson().toJson(
+                                    请求json(
+                                        path = 当前url.value,
+                                        getSharedPreferences("config", MODE_PRIVATE).getString(
+                                            "password",
+                                            ""
+                                        )!!,
+                                        1,
+                                        100,
+                                        false
+                                    )
                                 )
                             )
-                        )
-                        val list = Gson().fromJson(json, getListJson::class.java)
-                        fileItem.clear()
-                        list.data.content.forEach {
-                            fileItem.add(
-                                FileItem(
-                                    it.name, it.size, it.is_dir
+                            val list = Gson().fromJson(json, getListJson::class.java)
+                            fileItem.clear()
+                            list.data.content.forEach {
+                                fileItem.add(
+                                    FileItem(
+                                        it.name, it.size, it.is_dir
+                                    )
                                 )
-                            )
-                        }
+                            }
 
-                    }.start()
-                }) {
+                        }.start()
+                    },
+                ) {
                     if (it.isEmpty()) {
                         Text("根目录")
                     } else {
@@ -224,7 +265,7 @@ class MainActivity : ComponentActivity() {
     fun MyDialog(onDismiss: () -> Unit) {
         val context = LocalContext.current
         val host = context.getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
-        object :PopDialog(){
+        object : PopDialog() {
             override fun click() {
                 Thread {
                     val json = POST(
@@ -246,7 +287,7 @@ class MainActivity : ComponentActivity() {
                             return@runOnUiThread
                         } else {
                             Toast.makeText(context, "密码正确", Toast.LENGTH_SHORT).show()
-                            getSharedPreferences("config", ComponentActivity.MODE_PRIVATE).edit()
+                            getSharedPreferences("config", MODE_PRIVATE).edit()
                                 .putString("password", this.password).apply()
                             fileItem.clear()
                             list.data.content.forEach {

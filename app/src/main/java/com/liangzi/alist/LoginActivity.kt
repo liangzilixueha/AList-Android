@@ -43,7 +43,7 @@ class LoginActivity : ComponentActivity() {
                     .get()
                     .build()
                 Thread {
-                    val json = OkHttpClient().newCall(request).execute().body()?.string()
+                    val json = OkHttpClient().newCall(request!!).execute().body()?.string()
                     runOnUiThread {
                         if (json == "pong") {
                             Toast.makeText(this, json, Toast.LENGTH_SHORT).show()
