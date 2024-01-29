@@ -1,11 +1,8 @@
 package com.liangzi.alist.ui
 
-import android.content.Intent
-import android.util.Log
-import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,7 +24,9 @@ import com.liangzi.alist.data.FileItem
 open class FileListItem {
 
     open fun click() {}
+    open fun longClick() {}
 
+    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     fun Item(item: FileItem, dir: String) {
         Row(
@@ -35,9 +34,19 @@ open class FileListItem {
                 .fillMaxWidth()
                 .height(80.dp)
                 .padding(15.dp)
-                .clickable {
-                    click()
-                }
+                .combinedClickable(
+                    onClick = {
+                        // 点击
+                        this.click()
+                    },
+                    onLongClick = {
+                        // 长按
+                        this.longClick()
+                    },
+                    onDoubleClick = {
+                        // 双击
+                    }
+                )
         ) {
             // 左侧图片
             Image(

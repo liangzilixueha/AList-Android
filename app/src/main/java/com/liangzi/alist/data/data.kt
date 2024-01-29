@@ -14,7 +14,7 @@ class FileItem(val name: String, size: Long, val isDir: Boolean) {
     init {
         when {
             size == 0L -> this.size = "文件夹下无内容"
-            size < 1024 -> this.size = String.format("%.2f", size/1.0) + " B"
+            size < 1024 -> this.size = String.format("%.2f", size / 1.0) + " B"
             size < 1024 * 1024 -> this.size = String.format("%.2f", size / 1024.0) + " KB"
             size < 1024 * 1024 * 1024 -> this.size =
                 String.format("%.2f", size / 1024.0 / 1024) + " MB"
@@ -23,3 +23,9 @@ class FileItem(val name: String, size: Long, val isDir: Boolean) {
         }
     }
 }
+
+
+data class API(
+    val host: String = "",
+    val 获取文件详情: String = "/api/fs/get"
+)

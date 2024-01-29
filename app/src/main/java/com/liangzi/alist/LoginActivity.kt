@@ -4,6 +4,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import com.hjq.permissions.OnPermissionCallback
+import com.hjq.permissions.Permission
+import com.hjq.permissions.XXPermissions
 import com.liangzi.alist.databinding.ActivityLoginBinding
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -16,6 +19,33 @@ class LoginActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
+        XXPermissions.with(this)
+            // 申请单个权限
+            .permission(Permission.WRITE_EXTERNAL_STORAGE)
+            .permission(Permission.WRITE_SETTINGS)
+            .permission(Permission.READ_MEDIA_AUDIO)
+            .permission(Permission.READ_MEDIA_IMAGES)
+            .permission(Permission.READ_MEDIA_VIDEO)
+            .request(object : OnPermissionCallback {
+
+                override fun onGranted(permissions: MutableList<String>, allGranted: Boolean) {
+                    if (!allGranted) {
+                        Toast.makeText(baseContext, "获取存储权限失败", Toast.LENGTH_SHORT).show()
+                        return
+                    }
+                    Toast.makeText(baseContext, "获取存储权限成功", Toast.LENGTH_SHORT).show()
+                }
+
+                override fun onDenied(permissions: MutableList<String>, doNotAskAgain: Boolean) {
+                    if (doNotAskAgain) {
+                        Toast.makeText(baseContext, "获取存储权限失败，请手动授予权限", Toast.LENGTH_SHORT).show()
+                        // 如果是被永久拒绝就跳转到应用权限系统设置页面
+                        XXPermissions.startPermissionActivity(baseContext, permissions)
+                    } else {
+                        Toast.makeText(baseContext, "获取存储权限成功", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            })
         val url = getSharedPreferences("config", MODE_PRIVATE).getString("host", null)
         if (url != null) {
             Toast.makeText(this, "已登录", Toast.LENGTH_SHORT).show()

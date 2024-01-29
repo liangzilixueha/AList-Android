@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
+import com.liangzi.alist.data.API
 import com.liangzi.alist.databinding.ActivityPlayerBinding
 import com.liangzi.alist.tool.POST
 import xyz.doikki.videocontroller.StandardVideoController
@@ -20,7 +21,7 @@ class PlayerActivity : AppCompatActivity() {
         val url = intent.getStringExtra("url")
         Thread {
             val json = POST(
-                "$host$api",
+                "$host${API().获取文件详情}",
                 Gson().toJson(
                     com.liangzi.alist.data.请求json(
                         url!!,
