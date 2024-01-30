@@ -8,7 +8,11 @@ data class 请求json(
     val refresh: Boolean = false
 )
 
-class FileItem(val name: String, val size: Long, val isDir: Boolean)
+class FileItem(
+    val name: String,
+    val size: Long,
+    val isDir: Boolean,
+    val created: String="",)
 
 
 data class API(

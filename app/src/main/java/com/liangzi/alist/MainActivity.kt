@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -61,6 +62,7 @@ import com.liangzi.alist.ui.theme.AlistTheme
 import java.io.File
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.DownloadTaskListener {
     private lateinit var compose: RecomposeScope
     private var host = ""//域名
@@ -68,7 +70,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
     val 需要密码 = "password is incorrect or you have no permission"//密码错误时返回的判断
     val fileItem = mutableStateListOf<FileItem>()//文件列表
     val needPassword = mutableStateOf(false)//是否需要密码的视图切换
-    private val whichButton = mutableIntStateOf(1) //底部导航栏的按钮
+    private val whichButton = mutableIntStateOf(0) //底部导航栏的按钮
     private val download = mutableStateListOf<Download.ItemData>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -114,7 +116,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 list.data.content.forEach {
                     fileItem.add(
                         FileItem(
-                            it.name, it.size, it.is_dir
+                            it.name, it.size, it.is_dir, it.created
                         )
                     )
                 }
@@ -179,9 +181,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                         }
                         //设置界面
                         2 -> {
-                            Text(
-                                "设置", modifier = Modifier.weight(1f)
-                            )
+
                         }
 
                     }
@@ -271,7 +271,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             list.data.content.forEach {
                                 fileItem.add(
                                     FileItem(
-                                        it.name, it.size, it.is_dir
+                                        it.name, it.size, it.is_dir, it.created
                                     )
                                 )
                             }
@@ -353,7 +353,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             list.data.content.forEach {
                                 fileItem.add(
                                     FileItem(
-                                        it.name, it.size, it.is_dir
+                                        it.name, it.size, it.is_dir, it.created
                                     )
                                 )
                             }
@@ -457,7 +457,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             list.data.content.forEach {
                                 fileItem.add(
                                     FileItem(
-                                        it.name, it.size, it.is_dir
+                                        it.name, it.size, it.is_dir, it.created
                                     )
                                 )
                             }
@@ -487,6 +487,10 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     }
                 }
 
+            }
+
+            override fun moreInfo() {
+                Toast.makeText(context, "更多信息", Toast.LENGTH_SHORT).show()
             }
         }.Item(item, dir)
     }

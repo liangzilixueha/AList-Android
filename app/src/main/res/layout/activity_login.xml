@@ -47,4 +47,59 @@
         android:orientation="vertical"
         app:layout_constraintGuide_percent="0.5" />
 
+    <RadioGroup
+        android:id="@+id/radioGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btn">
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="管理员">
+
+        </RadioButton>
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="登录用户">
+
+        </RadioButton>
+
+        <RadioButton
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="路人">
+
+        </RadioButton>
+    </RadioGroup>
+
+    <EditText
+        android:id="@+id/account"
+        android:layout_width="250dp"
+        android:layout_height="48dp"
+        android:background="@android:color/transparent"
+        android:hint="账号"
+        android:textAlignment="center"
+        android:textColor="#1B9FD7"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/radioGroup" />
+
+    <EditText
+        android:id="@+id/pwd"
+        android:layout_width="250dp"
+        android:layout_height="48dp"
+        android:background="@android:color/transparent"
+        android:hint="密码"
+        android:textAlignment="center"
+        android:textColor="#1B9FD7"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/account" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -2,22 +2,29 @@ package com.liangzi.alist.ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.liangzi.alist.R
 import com.liangzi.alist.data.FileItem
 
@@ -32,7 +39,6 @@ open class FileListItem {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp)
                 .padding(15.dp)
                 .combinedClickable(
                     onClick = {
@@ -60,21 +66,42 @@ open class FileListItem {
 
             // 文件名
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = item.name,
+            Column(
                 modifier = Modifier
                     .weight(1f)
                     .align(Alignment.CenterVertically)
-            )
+            ) {
+                Text(
+                    text = item.name,
+                    modifier = Modifier
+                )
+                Text(
+                    text = item.created,
+                    modifier = Modifier,
+                    fontSize = 12.sp,
+                    color = Color.Gray
+
+                )
+            }
+
 
             // 文件大小
             Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = bytesToElse(item.size),
+            Icon(
+                imageVector = Icons.Default.List,
+                contentDescription = null,
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
+                    .clickable {
+                        moreInfo()
+                    },
+                tint = Color.Gray
             )
         }
+    }
+
+    open fun moreInfo() {
+
     }
 
     private fun bytesToElse(size: Long): String {
@@ -87,5 +114,12 @@ open class FileListItem {
 
             else -> String.format("%.2f", size / 1024.0 / 1024 / 1024) + " GB"
         }
+    }
+
+    @Preview
+    @Composable
+    fun P() {
+        val item = FileItem("超级大王".repeat(10), 1024 * 96 * 1024, true, "2024-01-11T12:36:33Z")
+        Item(item = item, dir = "")
     }
 }
