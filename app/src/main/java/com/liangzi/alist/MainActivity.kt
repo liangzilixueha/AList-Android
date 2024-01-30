@@ -1,11 +1,7 @@
 package com.liangzi.alist
 
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Intent
-import android.graphics.BitmapFactory
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
@@ -25,7 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Settings
@@ -37,6 +32,8 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.RecomposeScope
+import androidx.compose.runtime.currentRecomposeScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -49,7 +46,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.app.NotificationCompat
 import com.arialyy.aria.core.Aria
 import com.arialyy.aria.core.task.DownloadTask
 import com.google.gson.Gson
@@ -66,28 +62,47 @@ import java.io.File
 
 
 class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.DownloadTaskListener {
+    private lateinit var compose: RecomposeScope
     private var host = ""//域名
     private var 当前url = mutableStateOf("")//用于json请求中的path
     val 需要密码 = "password is incorrect or you have no permission"//密码错误时返回的判断
     val fileItem = mutableStateListOf<FileItem>()//文件列表
     val needPassword = mutableStateOf(false)//是否需要密码的视图切换
     private val whichButton = mutableIntStateOf(1) //底部导航栏的按钮
-    private val 下载进度 = mutableStateOf(0)//下载进度
+    private val download = mutableStateListOf<Download.ItemData>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         host = getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
         Aria.download(this).register()
+        Aria.get(this).downloadConfig.setConvertSpeed(false)
+        //初始化下载列表
+        Aria.download(this).taskList?.forEach {
+            download.add(
+                Download.ItemData(
+                    it.fileName,
+                    it.fileSize,
+                    it.percent,
+                    it.speed,
+                    when (it.isComplete) {
+                        true -> Download.State.COMPLETE
+                        false -> Download.State.STOP
+                    },
+                    it.id,
+                    it.key
+                )
+            )
+        }
+        //初始文件列表
         Thread {
             val json = POST(
-                url = "$host/api/fs/list",
-                json = Gson().toJson(
+                url = "$host/api/fs/list", json = Gson().toJson(
                     请求json(
                         path = "/",
-                        getSharedPreferences("config", MODE_PRIVATE).getString("password", "")!!,
-                        1,
-                        100,
-                        false
+                        getSharedPreferences(
+                            "config",
+                            MODE_PRIVATE
+                        ).getString("password", "")!!
                     )
                 )
             )
@@ -104,16 +119,14 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     )
                 }
             }
-
-
         }.start()
         setContent {
             AlistTheme {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     when (whichButton.intValue) {
+                        //首页
                         0 -> {
                             if (needPassword.value) {
                                 MyApp()
@@ -128,36 +141,47 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                                 }
                             }
                         }
-
+                        //下载界面
                         1 -> {
-                            Download().DownloadView()
-                            Aria.download(this).allNotCompleteTask
-                                ?.forEach {
-                                    Text(text = "未完成：${it.fileName}${it.percent}")
-                                }
-                            Aria.download(this).allCompleteTask
-                                ?.forEach {
-                                    Text(text = "完成：${it.fileName}")
-                                }
-                            Button(onClick = {
-                                Aria.download(this).taskList?.forEach {
-                                    Aria.download(this).load(it.id)
-                                        .ignoreCheckPermissions()
-                                        .cancel(true)
-                                }
-                            }) {
-                                Text(text = "删除全部")
-                            }
-                            Button(onClick = {
-                                Aria.download(this).stopAllTask();
-                            }) {
-                                Text(text = "暂停")
-                            }
+                            compose = currentRecomposeScope
+                            LazyColumn(content = {
+                                items(download.size) {
+                                    object : Download() {
+                                        override fun start() {
+                                            super.start()
+                                            Aria.download(this@MainActivity)
+                                                .load(download[it].id)
+                                                .ignoreCheckPermissions()
+                                                .resume()
+                                            download[it].state = State.START
+                                        }
 
+                                        override fun stop() {
+                                            super.stop()
+                                            Aria.download(this@MainActivity)
+                                                .load(download[it].id)
+                                                .ignoreCheckPermissions()
+                                                .stop()
+                                            download[it].state = State.STOP
+                                        }
+
+                                        override fun delete() {
+                                            super.delete()
+                                            Aria.download(this@MainActivity)
+                                                .load(download[it].id)
+                                                .ignoreCheckPermissions()
+                                                .cancel(true)
+                                            download.removeAt(it)
+                                        }
+                                    }.Item(download[it])
+                                }
+                            }, modifier = Modifier.weight(1f))
                         }
-
+                        //设置界面
                         2 -> {
-                            Text("设置")
+                            Text(
+                                "设置", modifier = Modifier.weight(1f)
+                            )
                         }
 
                     }
@@ -175,7 +199,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            containerColor = Color.White,
+            containerColor = Color.White
         ) {
             NavigationBarItem(
                 selected = whichButton.intValue == 0,
@@ -186,8 +210,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     Icon(
                         Icons.Default.Home,
                         contentDescription = "Account",
-                        modifier = Modifier
-                            .clip(CircleShape)
+                        modifier = Modifier.clip(CircleShape)
                     )
                 },
             )
@@ -200,8 +223,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     Icon(
                         Icons.Default.Notifications,
                         contentDescription = "Account",
-                        modifier = Modifier
-                            .clip(CircleShape)
+                        modifier = Modifier.clip(CircleShape)
                     )
                 },
             )
@@ -212,9 +234,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 },
                 icon = {
                     Icon(
-                        Icons.Default.Settings,
-                        contentDescription = "Account",
-                        modifier = Modifier
+                        Icons.Default.Settings, contentDescription = "Account", modifier = Modifier
                     )
                 },
             )
@@ -229,8 +249,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
     fun PathBar(path: String) {
         val move = rememberScrollState()
         Row(
-            modifier = Modifier
-                .horizontalScroll(move)
+            modifier = Modifier.horizontalScroll(move)
         ) {
             path.split("/").forEach {
                 Button(
@@ -238,17 +257,12 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                         当前url.value = path.substring(0, path.indexOf(it) + it.length)
                         Thread {
                             val json = POST(
-                                url = "$host/api/fs/list",
-                                json = Gson().toJson(
+                                url = "$host/api/fs/list", json = Gson().toJson(
                                     请求json(
                                         path = 当前url.value,
                                         getSharedPreferences("config", MODE_PRIVATE).getString(
-                                            "password",
-                                            ""
-                                        )!!,
-                                        1,
-                                        100,
-                                        false
+                                            "password", ""
+                                        )!!
                                     )
                                 )
                             )
@@ -320,14 +334,9 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
             override fun click() {
                 Thread {
                     val json = POST(
-                        url = "$host/api/fs/list",
-                        json = Gson().toJson(
+                        url = "$host/api/fs/list", json = Gson().toJson(
                             请求json(
-                                "/",
-                                this.password,
-                                1,
-                                100,
-                                false
+                                "/", this.password
                             )
                         )
                     )
@@ -369,67 +378,61 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier
-                .padding(8.dp)
+            modifier = Modifier.padding(8.dp)
         ) {
             // 选项列表
-            DropdownMenuItem(
-                text = {
-                    Text("下载")
-                },
-                onClick = {
-                    expanded = false
-                    val url = 当前url.value + "/" + item.name
-                    Thread {
-                        val json = POST(
-                            "$host${API().获取文件详情}",
-                            Gson().toJson(
-                                请求json(
-                                    url,
-                                    getSharedPreferences(
-                                        "config",
-                                        MODE_PRIVATE
-                                    ).getString("password", "")!!,
-                                    1,
-                                    1,
-                                    false
-                                )
+            DropdownMenuItem(text = {
+                Text("下载")
+            }, onClick = {
+                expanded = false
+                val url = 当前url.value + "/" + item.name
+                Thread {
+                    val json = POST(
+                        "$host${API().获取文件详情}", Gson().toJson(
+                            请求json(
+                                url, getSharedPreferences(
+                                    "config", MODE_PRIVATE
+                                ).getString("password", "")!!
                             )
                         )
-                        val raw_url =
-                            Gson().fromJson(
-                                json,
-                                com.liangzi.alist.json.getFileJson::class.java
-                            ).data.raw_url
-                        //path，本地文件保存路径
-                        val dir_ = File(
-                            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                            "Alist"
+                    )
+                    val raw_url = Gson().fromJson(
+                        json, com.liangzi.alist.json.getFileJson::class.java
+                    ).data.raw_url
+                    //path，本地文件保存路径
+                    val dir_ = File(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                        "Alist"
+                    )
+                    if (!dir_.exists()) {
+                        dir_.mkdirs()
+                    }
+                    //下载
+                    val taskId: Long = Aria.download(this).load(raw_url) //读取下载地址
+                        .ignoreCheckPermissions()
+                        .setFilePath(dir_.path + "/${item.name}") //设置文件保存的完整路径
+                        .create() //创建并启动下载
+                    Log.d("下载id", taskId.toString())
+                    download.add(
+                        Download.ItemData(
+                            item.name,
+                            item.size,
+                            0,
+                            0,
+                            Download.State.START,
+                            taskId,
+                            raw_url
                         )
-                        if (!dir_.exists()) {
-                            dir_.mkdirs()
-                        }
-                        //下载
-                        val taskId: Long = Aria.download(this)
-                            .load(raw_url) //读取下载地址
-                            .ignoreCheckPermissions()
-                            .setFilePath(dir_.path + "/${item.name}") //设置文件保存的完整路径
-                            .create() //创建并启动下载
+                    )
 
-                    }.start()
-                },
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
+                }.start()
+            }, modifier = Modifier.align(Alignment.CenterHorizontally)
             )
-            DropdownMenuItem(
-                text = {
-                    Text("开发中")
-                },
-                onClick = {
-                    expanded = false
-                },
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
+            DropdownMenuItem(text = {
+                Text("开发中")
+            }, onClick = {
+                expanded = false
+            }, modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
         object : FileListItem() {
@@ -438,17 +441,12 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     当前url.value += "/" + item.name
                     Thread {
                         val json = POST(
-                            url = "$host/api/fs/list",
-                            json = Gson().toJson(
+                            url = "$host/api/fs/list", json = Gson().toJson(
                                 请求json(
                                     path = 当前url.value,
                                     getSharedPreferences("config", MODE_PRIVATE).getString(
-                                        "password",
-                                        ""
-                                    )!!,
-                                    1,
-                                    100,
-                                    false
+                                        "password", ""
+                                    )!!
                                 )
                             )
                         )
@@ -467,31 +465,23 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     }.start()
                 } else if (item.name.endsWith(".mp4") || item.name.endsWith(".mkv")) {
 
-                    startActivity(
-                        Intent(context, PlayerActivity::class.java).apply {
-                            putExtra("url", 当前url.value + "/" + item.name)
-                        }
-                    )
+                    startActivity(Intent(context, PlayerActivity::class.java).apply {
+                        putExtra("url", 当前url.value + "/" + item.name)
+                    })
                 } else {
-                    Toast
-                        .makeText(context, "暂不支持预览", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(context, "暂不支持预览", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun longClick() {
                 when (item.isDir) {
                     true -> {
-                        Toast
-                            .makeText(context, "不是文件", Toast.LENGTH_SHORT)
-                            .show()
+                        Toast.makeText(context, "不是文件", Toast.LENGTH_SHORT).show()
 
                     }
 
                     else -> {
-                        Toast
-                            .makeText(context, "是文件", Toast.LENGTH_SHORT)
-                            .show()
+                        Toast.makeText(context, "是文件", Toast.LENGTH_SHORT).show()
                         expanded = true
 
                     }
@@ -512,13 +502,14 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
     }
 
     override fun onTaskResume(task: DownloadTask?) {
+        compose.invalidate()
     }
 
-    override fun onTaskStart(task: DownloadTask?) {
-        Log.d("下载开始", task?.percent.toString())
+    override fun onTaskStart(task: DownloadTask) {
     }
 
     override fun onTaskStop(task: DownloadTask?) {
+        compose.invalidate()
     }
 
     override fun onTaskCancel(task: DownloadTask?) {
@@ -528,51 +519,30 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
     override fun onTaskFail(task: DownloadTask?, e: Exception?) {
     }
 
-    override fun onTaskComplete(task: DownloadTask?) {
+    override fun onTaskComplete(task: DownloadTask) {
+        download.forEach {
+            if (it.taskKey == task.key) {
+                it.state = Download.State.COMPLETE
+                it.speed = 0
+                it.progress = 100
+            }
+        }
+        compose.invalidate()
     }
 
-    override fun onTaskRunning(task: DownloadTask?) {
-        Log.d("下载进度", task?.percent.toString())
-        val mProgressChannelId = "1"
-        val mProgressChannelName = "下载进度"
-        val mManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-
-            val channel = NotificationChannel(
-                mProgressChannelId,
-                mProgressChannelName,
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-
-            mManager.createNotificationChannel(channel)
+    override fun onTaskRunning(task: DownloadTask) {
+        Log.d("下载key", task.key)
+        download.forEach {
+            if (it.taskKey == task.key) {
+                it.progress = task.percent
+                it.speed = task.speed
+            }
         }
-        val progressMax = 100
-        val progressCurrent = task?.percent
-        val mBuilder = NotificationCompat.Builder(this, mProgressChannelId)
-            .setContentTitle("进度通知")
-            .setContentText("下载中：$progressCurrent%")
-            .setSmallIcon(R.drawable.logo)
-            .setLargeIcon(
-                BitmapFactory.decodeResource(
-                    resources,
-                    Icons.Default.CheckCircle.hashCode()
-                )
-            )
-            // 第3个参数indeterminate，false表示确定的进度，比如100，true表示不确定的进度，会一直显示进度动画，直到更新状态下载完成，或删除通知
-            .setProgress(progressMax, progressCurrent!!, false)
-        mManager.notify(1, mBuilder.build())
+        //界面重绘
+        compose.invalidate()
     }
 
     override fun onNoSupportBreakPoint(task: DownloadTask?) {
+
     }
-
 }
-
-
-
-
-
-
-
-
-

@@ -10,8 +10,7 @@ import com.liangzi.alist.tool.POST
 import xyz.doikki.videocontroller.StandardVideoController
 
 class PlayerActivity : AppCompatActivity() {
-    var host = ""
-    val api = "/api/fs/get"
+    private var host = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
@@ -25,10 +24,7 @@ class PlayerActivity : AppCompatActivity() {
                 Gson().toJson(
                     com.liangzi.alist.data.请求json(
                         url!!,
-                        getSharedPreferences("config", MODE_PRIVATE).getString("password", "")!!,
-                        1,
-                        1,
-                        false
+                        getSharedPreferences("config", MODE_PRIVATE).getString("password", "")!!
                     )
                 )
             )
@@ -43,7 +39,6 @@ class PlayerActivity : AppCompatActivity() {
                     player.setVideoController(controller) //设置控制器
                     player.start() //开始播放，不调用则不自动播放
                 }
-
             }
         }.start()
 

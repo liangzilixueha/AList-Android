@@ -70,10 +70,22 @@ open class FileListItem {
             // 文件大小
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = item.size,
+                text = bytesToElse(item.size),
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
             )
+        }
+    }
+
+    private fun bytesToElse(size: Long): String {
+        return when {
+            size == 0L -> "文件夹下无内容"
+            size < 1024 -> String.format("%.2f", size / 1.0) + " B"
+            size < 1024 * 1024 -> String.format("%.2f", size / 1024.0) + " KB"
+            size < 1024 * 1024 * 1024 -> String
+                .format("%.2f", size / 1024.0 / 1024) + " MB"
+
+            else -> String.format("%.2f", size / 1024.0 / 1024 / 1024) + " GB"
         }
     }
 }
