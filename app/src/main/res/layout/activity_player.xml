@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".PlayerActivity">
 
-    <xyz.doikki.videoplayer.player.VideoView
+    <com.liangzi.alist.ui.compose.JzvdStdSpeed
         android:id="@+id/player"
         android:layout_width="match_parent"
         android:layout_height="300dp"

@@ -5,7 +5,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 
 fun <T> POST(url: String, data: T): String? {
-    if(data is String){
+    if (data is String) {
         throw Exception("使用错误，已在请求内json化，无需传入json数据")
     }
     val request = okhttp3.Request.Builder()
@@ -19,4 +19,10 @@ fun <T> POST(url: String, data: T): String? {
         .build()
     return OkHttpClient().newCall(request).execute().body?.string()
 
+}
+
+fun inThread(action: () -> Unit) {
+    Thread {
+        action()
+    }.start()
 }

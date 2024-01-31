@@ -50,12 +50,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.arialyy.aria.core.Aria
 import com.arialyy.aria.core.task.DownloadTask
-import com.google.gson.Gson
 import com.liangzi.alist.data.API
 import com.liangzi.alist.data.FileItem
 import com.liangzi.alist.data.请求json
+import com.liangzi.alist.json.getFileJson
 import com.liangzi.alist.json.getListJson
 import com.liangzi.alist.tool.POST
+import com.liangzi.alist.tool.inThread
 import com.liangzi.alist.ui.FileListItem
 import com.liangzi.alist.ui.PopDialog
 import com.liangzi.alist.ui.compose.BottomSheet
@@ -104,7 +105,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
             )
         }
         //初始文件列表
-        Thread {
+        inThread {
             val json = POST(
                 url = "$host${API().获取文件列表}", data =
                 请求json(
@@ -115,13 +116,13 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     ).getString("password", "")!!
                 )
             )
-            val list = Gson().fromJson(json, getListJson::class.java)
+            val list = getListJson.fromJson(json)
             if (list.message == 需要密码) {
                 needPassword.value = true
             } else {
                 updateFilesList(list)
             }
-        }.start()
+        }
         setContent {
             AlistTheme {
                 Column(
@@ -206,7 +207,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 val url = 当前url.value + "/" + 当前点击item.name
-                                Thread {
+                                inThread {
                                     val json = POST(
                                         "$host${API().获取文件详情}",
                                         请求json(
@@ -216,9 +217,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                                         )
                                     )
                                     Log.d("下载json", url + "$host${API().获取文件详情}" + json!!)
-                                    val raw_url = Gson().fromJson(
-                                        json, com.liangzi.alist.json.getFileJson::class.java
-                                    ).data.raw_url
+                                    val raw_url = getFileJson.fromJson(json).data.raw_url
                                     //path，本地文件保存路径
                                     val dir_ = File(
                                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
@@ -245,7 +244,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                                         )
                                     )
 
-                                }.start()
+                                }
                             }
                         }.BottomSheet(
                             data = BottomSheetData.value
@@ -318,7 +317,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 Button(
                     onClick = {
                         当前url.value = path.substring(0, path.indexOf(it) + it.length)
-                        Thread {
+                        inThread {
                             val json = POST(
                                 url = "$host/api/fs/list", data =
                                 请求json(
@@ -328,11 +327,9 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                                     )!!
                                 )
                             )
-
-                            val list = Gson().fromJson(json, getListJson::class.java)
+                            val list = getListJson.fromJson(json)
                             updateFilesList(list)
-
-                        }.start()
+                        }
                     },
                 ) {
                     if (it.isEmpty()) {
@@ -399,14 +396,14 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
         val host = context.getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
         object : PopDialog() {
             override fun click() {
-                Thread {
+                inThread {
                     val json = POST(
                         url = "$host/api/fs/list", data =
                         请求json(
                             "/", this.password
                         )
                     )
-                    val list = Gson().fromJson(json, getListJson::class.java)
+                    val list = getListJson.fromJson(json)
                     runOnUiThread {
                         if (list.message == 需要密码) {
                             Toast.makeText(context, "密码错误", Toast.LENGTH_SHORT).show()
@@ -419,7 +416,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             needPassword.value = false
                         }
                     }
-                }.start()
+                }
                 onDismiss()
             }
         }.PassWordDialog(onDismiss = onDismiss)
@@ -444,46 +441,6 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 Text("下载")
             }, onClick = {
                 expanded = false
-                val url = 当前url.value + "/" + item.name
-                Thread {
-                    val json = POST(
-                        "$host${API().获取文件详情}",
-                        请求json(
-                            url, getSharedPreferences(
-                                "config", MODE_PRIVATE
-                            ).getString("password", "")!!
-                        )
-                    )
-                    val raw_url = Gson().fromJson(
-                        json, com.liangzi.alist.json.getFileJson::class.java
-                    ).data.raw_url
-                    //path，本地文件保存路径
-                    val dir_ = File(
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                        "Alist"
-                    )
-                    if (!dir_.exists()) {
-                        dir_.mkdirs()
-                    }
-                    //下载
-                    val taskId: Long = Aria.download(this).load(raw_url) //读取下载地址
-                        .ignoreCheckPermissions()
-                        .setFilePath(dir_.path + "/${item.name}") //设置文件保存的完整路径
-                        .create() //创建并启动下载
-                    Log.d("下载id", taskId.toString())
-                    download.add(
-                        Download.ItemData(
-                            item.name,
-                            item.size,
-                            0,
-                            0,
-                            Download.State.START,
-                            taskId,
-                            raw_url
-                        )
-                    )
-
-                }.start()
             }, modifier = Modifier.align(Alignment.CenterHorizontally)
             )
             DropdownMenuItem(text = {
@@ -507,14 +464,11 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                                 )!!
                             )
                         )
-                        val list = Gson().fromJson(json, getListJson::class.java)
+                        val list = getListJson.fromJson(json)
                         Log.d("点击项目", item.name + json!!)
-                        runOnUiThread {
-                            updateFilesList(list)
-                        }
+                        updateFilesList(list)
                     }.start()
                 } else if (item.name.endsWith(".mp4") || item.name.endsWith(".mkv")) {
-
                     startActivity(Intent(context, PlayerActivity::class.java).apply {
                         putExtra("url", 当前url.value + "/" + item.name)
                     })

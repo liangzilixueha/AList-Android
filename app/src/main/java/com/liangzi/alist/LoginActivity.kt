@@ -22,7 +22,6 @@ class LoginActivity : ComponentActivity() {
         XXPermissions.with(this)
             // 申请单个权限
             .permission(Permission.WRITE_EXTERNAL_STORAGE)
-            .permission(Permission.WRITE_SETTINGS)
             .permission(Permission.READ_MEDIA_AUDIO)
             .permission(Permission.READ_MEDIA_IMAGES)
             .permission(Permission.READ_MEDIA_VIDEO)

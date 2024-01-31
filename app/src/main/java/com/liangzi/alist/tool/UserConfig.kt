@@ -9,6 +9,7 @@ class UserConfig {
     private val password = ""//用户的密码
     private val token = ""//用户的token
     private val level = UserLevel.GUEST
+    private val lock = ""
 
     fun getHost(context: Context): String {
         context.getSharedPreferences("config", ComponentActivity.MODE_PRIVATE)
@@ -32,6 +33,11 @@ class UserConfig {
 
     fun getLevel(): UserLevel {
         return level
+    }
+
+    fun getLock(context: Context): String? {
+        return context.getSharedPreferences("config", ComponentActivity.MODE_PRIVATE)
+            .getString("password", "")
     }
 
 }

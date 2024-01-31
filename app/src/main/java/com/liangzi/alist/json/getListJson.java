@@ -1,6 +1,11 @@
 package com.liangzi.alist.json;
 
 
+import com.google.gson.Gson;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 
 public class getListJson {
@@ -29,5 +34,10 @@ public class getListJson {
             public String hashinfo;
             public Object hash_info;
         }
+    }
+
+    public static getListJson fromJson(String json) {
+        Gson gson = new Gson();
+        return gson.fromJson(json, getListJson.class);
     }
 }

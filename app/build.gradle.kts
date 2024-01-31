@@ -88,6 +88,7 @@ dependencies {
     implementation ("com.afollestad.material-dialogs:input:3.3.0")
     implementation ("xyz.doikki.android.dkplayer:dkplayer-java:3.3.7")
     implementation ("xyz.doikki.android.dkplayer:dkplayer-ui:3.3.7")
+    implementation ("cn.jzvd:jiaozivideoplayer:7.7.0")
     implementation ("me.laoyuyu.aria:core:3.8.16")
     annotationProcessor ("me.laoyuyu.aria:compiler:3.8.16")
     implementation ("io.coil-kt:coil-compose:2.1.0")
