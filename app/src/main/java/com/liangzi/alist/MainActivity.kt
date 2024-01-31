@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
     private val BottomSheetData =
         mutableStateOf(SheetData("666".repeat(20), "666", "01-30 19:03"))
     var showBottomSheet = mutableStateOf(false)
+    var 当前点击item = FileItem("", 0L, "", false, "")
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -105,28 +106,20 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
         //初始文件列表
         Thread {
             val json = POST(
-                url = "$host/api/fs/list", json = Gson().toJson(
-                    请求json(
-                        path = "/",
-                        getSharedPreferences(
-                            "config",
-                            MODE_PRIVATE
-                        ).getString("password", "")!!
-                    )
+                url = "$host${API().获取文件列表}", data =
+                请求json(
+                    path = "/",
+                    getSharedPreferences(
+                        "config",
+                        MODE_PRIVATE
+                    ).getString("password", "")!!
                 )
             )
             val list = Gson().fromJson(json, getListJson::class.java)
             if (list.message == 需要密码) {
                 needPassword.value = true
             } else {
-                fileItem.clear()
-                list.data.content.forEach {
-                    fileItem.add(
-                        FileItem(
-                            it.name, it.size, it.thumb, it.is_dir, it.created
-                        )
-                    )
-                }
+                updateFilesList(list)
             }
         }.start()
         setContent {
@@ -202,7 +195,59 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             showBottomSheet.value = false
                         },
                     ) {
-                        BottomSheet().BottomSheet(
+                        object : BottomSheet() {
+                            override fun download() {
+                                if (当前点击item.isDir) {
+                                    return
+                                }
+                                Toast.makeText(
+                                    this@MainActivity,
+                                    "下载成功",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                val url = 当前url.value + "/" + 当前点击item.name
+                                Thread {
+                                    val json = POST(
+                                        "$host${API().获取文件详情}",
+                                        请求json(
+                                            url, getSharedPreferences(
+                                                "config", MODE_PRIVATE
+                                            ).getString("password", "")!!
+                                        )
+                                    )
+                                    Log.d("下载json", url + "$host${API().获取文件详情}" + json!!)
+                                    val raw_url = Gson().fromJson(
+                                        json, com.liangzi.alist.json.getFileJson::class.java
+                                    ).data.raw_url
+                                    //path，本地文件保存路径
+                                    val dir_ = File(
+                                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                                        "Alist"
+                                    )
+                                    if (!dir_.exists()) {
+                                        dir_.mkdirs()
+                                    }
+                                    //下载
+                                    val taskId: Long = Aria.download(this).load(raw_url) //读取下载地址
+                                        .ignoreCheckPermissions()
+                                        .setFilePath(dir_.path + "/${当前点击item.name}") //设置文件保存的完整路径
+                                        .create() //创建并启动下载
+                                    Log.d("下载id", taskId.toString())
+                                    download.add(
+                                        Download.ItemData(
+                                            当前点击item.name,
+                                            当前点击item.size,
+                                            0,
+                                            0,
+                                            Download.State.START,
+                                            taskId,
+                                            raw_url
+                                        )
+                                    )
+
+                                }.start()
+                            }
+                        }.BottomSheet(
                             data = BottomSheetData.value
                         )
                     }
@@ -275,24 +320,17 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                         当前url.value = path.substring(0, path.indexOf(it) + it.length)
                         Thread {
                             val json = POST(
-                                url = "$host/api/fs/list", json = Gson().toJson(
-                                    请求json(
-                                        path = 当前url.value,
-                                        getSharedPreferences("config", MODE_PRIVATE).getString(
-                                            "password", ""
-                                        )!!
-                                    )
+                                url = "$host/api/fs/list", data =
+                                请求json(
+                                    path = 当前url.value,
+                                    getSharedPreferences("config", MODE_PRIVATE).getString(
+                                        "password", ""
+                                    )!!
                                 )
                             )
+
                             val list = Gson().fromJson(json, getListJson::class.java)
-                            fileItem.clear()
-                            list.data.content.forEach {
-                                fileItem.add(
-                                    FileItem(
-                                        it.name, it.size, it.thumb, it.is_dir, it.created
-                                    )
-                                )
-                            }
+                            updateFilesList(list)
 
                         }.start()
                     },
@@ -321,6 +359,17 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 }
             }
         })
+    }
+
+    fun updateFilesList(list: getListJson) {
+        fileItem.clear()
+        list.data.content.forEach {
+            fileItem.add(
+                FileItem(
+                    it.name, it.size, it.thumb, it.is_dir, it.created
+                )
+            )
+        }
     }
 
     @Composable
@@ -352,10 +401,9 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
             override fun click() {
                 Thread {
                     val json = POST(
-                        url = "$host/api/fs/list", json = Gson().toJson(
-                            请求json(
-                                "/", this.password
-                            )
+                        url = "$host/api/fs/list", data =
+                        请求json(
+                            "/", this.password
                         )
                     )
                     val list = Gson().fromJson(json, getListJson::class.java)
@@ -367,14 +415,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             Toast.makeText(context, "密码正确", Toast.LENGTH_SHORT).show()
                             getSharedPreferences("config", MODE_PRIVATE).edit()
                                 .putString("password", this.password).apply()
-                            fileItem.clear()
-                            list.data.content.forEach {
-                                fileItem.add(
-                                    FileItem(
-                                        it.name, it.size, it.thumb, it.is_dir, it.created
-                                    )
-                                )
-                            }
+                            updateFilesList(list)
                             needPassword.value = false
                         }
                     }
@@ -406,12 +447,11 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 val url = 当前url.value + "/" + item.name
                 Thread {
                     val json = POST(
-                        "$host${API().获取文件详情}", Gson().toJson(
-                            请求json(
-                                url, getSharedPreferences(
-                                    "config", MODE_PRIVATE
-                                ).getString("password", "")!!
-                            )
+                        "$host${API().获取文件详情}",
+                        请求json(
+                            url, getSharedPreferences(
+                                "config", MODE_PRIVATE
+                            ).getString("password", "")!!
                         )
                     )
                     val raw_url = Gson().fromJson(
@@ -459,26 +499,18 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     当前url.value += "/" + item.name
                     Thread {
                         val json = POST(
-                            url = "$host/api/fs/list", json = Gson().toJson(
-                                请求json(
-                                    path = 当前url.value,
-                                    getSharedPreferences("config", MODE_PRIVATE).getString(
-                                        "password", ""
-                                    )!!
-                                )
+                            url = "$host/api/fs/list", data =
+                            请求json(
+                                path = 当前url.value,
+                                getSharedPreferences("config", MODE_PRIVATE).getString(
+                                    "password", ""
+                                )!!
                             )
                         )
                         val list = Gson().fromJson(json, getListJson::class.java)
                         Log.d("点击项目", item.name + json!!)
                         runOnUiThread {
-                            fileItem.clear()
-                            list.data.content.forEach {
-                                fileItem.add(
-                                    FileItem(
-                                        it.name, it.size, it.thumb, it.is_dir, it.created
-                                    )
-                                )
-                            }
+                            updateFilesList(list)
                         }
                     }.start()
                 } else if (item.name.endsWith(".mp4") || item.name.endsWith(".mkv")) {
@@ -516,6 +548,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     item.size
                 )
                 showBottomSheet.value = true
+                当前点击item = item
             }
         }.Item(item, dir)
     }

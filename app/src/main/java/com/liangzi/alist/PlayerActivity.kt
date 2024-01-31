@@ -21,11 +21,9 @@ class PlayerActivity : AppCompatActivity() {
         Thread {
             val json = POST(
                 "$host${API().获取文件详情}",
-                Gson().toJson(
-                    com.liangzi.alist.data.请求json(
-                        url!!,
-                        getSharedPreferences("config", MODE_PRIVATE).getString("password", "")!!
-                    )
+                com.liangzi.alist.data.请求json(
+                    url!!,
+                    getSharedPreferences("config", MODE_PRIVATE).getString("password", "")!!
                 )
             )
             Log.d("json", json!!)

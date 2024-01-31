@@ -2,6 +2,7 @@ package com.liangzi.alist.ui.compose
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -26,8 +26,11 @@ import com.liangzi.alist.R
 open class BottomSheet {
 
 
+    open fun download() {
+
+    }
+
     @SuppressLint("NotConstructor")
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun BottomSheet(data: SheetData) {
         val icon_szie = 25.dp
@@ -70,17 +73,22 @@ open class BottomSheet {
                 }
 
             }
+            Iconitem(action = { download() })
+            Iconitem()
             Iconitem()
             Spacer(modifier = Modifier.height(70.dp))
         }
     }
 
     @Composable
-    fun Iconitem(id: Int = R.drawable.download, text: String = "下载") {
+    fun Iconitem(id: Int = R.drawable.download, text: String = "下载", action: () -> Unit = {}) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 10.dp)
+                .padding(top = 25.dp)
+                .clickable {
+                    action()
+                }
         ) {
             Image(
                 painter = painterResource(id = id),
@@ -176,7 +184,6 @@ open class BottomSheet {
         }
     }
 }
-
 
 
 data class SheetData(
