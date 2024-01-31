@@ -543,7 +543,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 it.progress = 100
             }
         }
-        compose.invalidate()
+        compose?.invalidate()
     }
 
     override fun onTaskRunning(task: DownloadTask) {
