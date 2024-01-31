@@ -181,7 +181,6 @@ open class Download {
         val id: Long = 0,
         val taskKey: String = ""
     )
-
     private fun bytesToElse(bytes: Long): String {
         return when {
             bytes < 1024 -> {

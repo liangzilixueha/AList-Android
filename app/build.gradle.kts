@@ -90,6 +90,8 @@ dependencies {
     implementation ("xyz.doikki.android.dkplayer:dkplayer-ui:3.3.7")
     implementation ("me.laoyuyu.aria:core:3.8.16")
     annotationProcessor ("me.laoyuyu.aria:compiler:3.8.16")
+    implementation ("io.coil-kt:coil-compose:2.1.0")
+
 
 
 }

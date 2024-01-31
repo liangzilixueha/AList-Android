@@ -80,7 +80,6 @@ open class FileListItem {
                     modifier = Modifier,
                     fontSize = 12.sp,
                     color = Color.Gray
-
                 )
             }
 
@@ -119,7 +118,7 @@ open class FileListItem {
     @Preview
     @Composable
     fun P() {
-        val item = FileItem("超级大王".repeat(10), 1024 * 96 * 1024, true, "2024-01-11T12:36:33Z")
+        val item = FileItem("超级大王".repeat(10), 1024 * 96 * 1024, "", true,"2024-01-11T12:36:33Z")
         Item(item = item, dir = "")
     }
 }

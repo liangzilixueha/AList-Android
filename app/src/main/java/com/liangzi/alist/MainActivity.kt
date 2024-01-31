@@ -29,6 +29,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -57,7 +58,9 @@ import com.liangzi.alist.json.getListJson
 import com.liangzi.alist.tool.POST
 import com.liangzi.alist.ui.FileListItem
 import com.liangzi.alist.ui.PopDialog
+import com.liangzi.alist.ui.compose.BottomSheet
 import com.liangzi.alist.ui.compose.Download
+import com.liangzi.alist.ui.compose.SheetData
 import com.liangzi.alist.ui.theme.AlistTheme
 import java.io.File
 
@@ -72,6 +75,10 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
     val needPassword = mutableStateOf(false)//是否需要密码的视图切换
     private val whichButton = mutableIntStateOf(0) //底部导航栏的按钮
     private val download = mutableStateListOf<Download.ItemData>()
+    private val BottomSheetData =
+        mutableStateOf(SheetData("666".repeat(20), "666", "01-30 19:03"))
+    var showBottomSheet = mutableStateOf(false)
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,7 +123,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 list.data.content.forEach {
                     fileItem.add(
                         FileItem(
-                            it.name, it.size, it.is_dir, it.created
+                            it.name, it.size, it.thumb, it.is_dir, it.created
                         )
                     )
                 }
@@ -187,7 +194,18 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                     }
                     BottomBar()
                 }
+                //TODO:底部弹出菜单
 
+                if (showBottomSheet.value)
+                    ModalBottomSheet(
+                        onDismissRequest = {
+                            showBottomSheet.value = false
+                        },
+                    ) {
+                        BottomSheet().BottomSheet(
+                            data = BottomSheetData.value
+                        )
+                    }
 
             }
         }
@@ -271,7 +289,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             list.data.content.forEach {
                                 fileItem.add(
                                     FileItem(
-                                        it.name, it.size, it.is_dir, it.created
+                                        it.name, it.size, it.thumb, it.is_dir, it.created
                                     )
                                 )
                             }
@@ -353,7 +371,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             list.data.content.forEach {
                                 fileItem.add(
                                     FileItem(
-                                        it.name, it.size, it.is_dir, it.created
+                                        it.name, it.size, it.thumb, it.is_dir, it.created
                                     )
                                 )
                             }
@@ -457,7 +475,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             list.data.content.forEach {
                                 fileItem.add(
                                     FileItem(
-                                        it.name, it.size, it.is_dir, it.created
+                                        it.name, it.size, it.thumb, it.is_dir, it.created
                                     )
                                 )
                             }
@@ -489,8 +507,15 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
 
             }
 
+            //TODO:文件更多显示
             override fun moreInfo() {
-                Toast.makeText(context, "更多信息", Toast.LENGTH_SHORT).show()
+                BottomSheetData.value = SheetData(
+                    item.name,
+                    item.thumb,
+                    item.created,
+                    item.size
+                )
+                showBottomSheet.value = true
             }
         }.Item(item, dir)
     }

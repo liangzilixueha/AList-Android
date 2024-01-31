@@ -1,5 +1,6 @@
 package com.liangzi.alist.tool
 
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 
 fun POST(url:String,json:String):String?{
@@ -7,11 +8,11 @@ fun POST(url:String,json:String):String?{
         .url(url)
         .post(
             okhttp3.RequestBody.create(
-                okhttp3.MediaType.parse("application/json; charset=utf-8"),
+                "application/json; charset=utf-8".toMediaTypeOrNull(),
                 json
             )
         )
         .build()
-    return OkHttpClient().newCall(request).execute().body()?.string()
+    return OkHttpClient().newCall(request).execute().body?.string()
 
 }

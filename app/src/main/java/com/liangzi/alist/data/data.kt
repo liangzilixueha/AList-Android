@@ -11,6 +11,7 @@ data class 请求json(
 class FileItem(
     val name: String,
     val size: Long,
+    val thumb: String,
     val isDir: Boolean,
     val created: String="",)
 
