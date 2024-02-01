@@ -16,9 +16,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <Spinner
+        android:id="@+id/spinner"
+        android:layout_width="0dp"
+        android:layout_height="48dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="@+id/host"
+        app:layout_constraintEnd_toStartOf="@+id/host"
+        app:layout_constraintTop_toTopOf="@+id/host" />
+
     <EditText
         android:id="@+id/host"
-        android:layout_width="250dp"
+        android:layout_width="100dp"
         android:layout_height="48dp"
         android:background="@android:color/transparent"
         android:hint="请输入域名"
@@ -57,6 +66,7 @@
         app:layout_constraintTop_toBottomOf="@+id/btn">
 
         <RadioButton
+            android:id="@+id/admin"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:text="管理员">
@@ -64,6 +74,7 @@
         </RadioButton>
 
         <RadioButton
+            android:id="@+id/user"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:text="登录用户">
@@ -71,6 +82,7 @@
         </RadioButton>
 
         <RadioButton
+            android:id="@+id/guest"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:text="路人">

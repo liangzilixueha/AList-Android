@@ -16,6 +16,7 @@ fun <T> POST(url: String, data: T): String? {
                 Gson().toJson(data)
             )
         )
+        .addHeader("Authorization",UserConfig.token)
         .build()
     return OkHttpClient().newCall(request).execute().body?.string()
 

@@ -69,7 +69,7 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.DownloadTaskListener {
-    private lateinit var compose: RecomposeScope
+    private var compose: RecomposeScope? = null
     private var host = ""//域名
     private var 当前url = mutableStateOf("")//用于json请求中的path
     val 需要密码 = "password is incorrect or you have no permission"//密码错误时返回的判断
@@ -407,6 +407,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             Toast.makeText(context, "密码正确", Toast.LENGTH_SHORT).show()
                             getSharedPreferences("config", MODE_PRIVATE).edit()
                                 .putString("lock", this.password).apply()
+                            UserConfig.init(context)
                             updateFilesList(list)
                             needPassword.value = false
                         }
@@ -511,14 +512,14 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
     }
 
     override fun onTaskResume(task: DownloadTask?) {
-        compose.invalidate()
+        compose?.invalidate()
     }
 
     override fun onTaskStart(task: DownloadTask) {
     }
 
     override fun onTaskStop(task: DownloadTask?) {
-        compose.invalidate()
+        compose?.invalidate()
     }
 
     override fun onTaskCancel(task: DownloadTask?) {
