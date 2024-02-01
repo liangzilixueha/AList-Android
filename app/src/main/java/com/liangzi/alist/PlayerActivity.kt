@@ -21,14 +21,14 @@ class PlayerActivity : AppCompatActivity(){
         setContentView(R.layout.layout_std_speed)
         binding = ActivityPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        host = getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
+        host = UserConfig.host
         val url = intent.getStringExtra("url")
         inThread {
             val json = POST(
                 "$host${API().获取文件详情}",
                 请求json(
                     url!!,
-                    UserConfig().getLock(this)!!
+                    UserConfig.lock
                 )
             )
             Log.d("json", json!!)

@@ -1,49 +1,24 @@
 package com.liangzi.alist.tool
 
 import android.content.Context
-import androidx.activity.ComponentActivity
+import android.content.Context.MODE_PRIVATE
 
-class UserConfig {
-    private val host = ""//域名
-    private val account = ""//用户的账号
-    private val password = ""//用户的密码
-    private val token = ""//用户的token
-    private val level = UserLevel.GUEST
-    private val lock = ""
+object UserConfig {
+    var host = ""//域名
+    var account = ""//用户的账号
+    var password = ""//用户的密码
+    var token = ""//用户的token
+    val level = UserLevel.GUEST
+    var lock: String = ""
 
-    fun getHost(context: Context): String {
-        context.getSharedPreferences("config", ComponentActivity.MODE_PRIVATE)
-            .getString("host", null)
-        return host
+    fun init(context: Context) {
+        host = context.getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
+        account = context.getSharedPreferences("config", MODE_PRIVATE).getString("account", "")!!
+        password = context.getSharedPreferences("config", MODE_PRIVATE).getString("password", "")!!
+        token = context.getSharedPreferences("config", MODE_PRIVATE).getString("token", "")!!
+        lock = context.getSharedPreferences("config", MODE_PRIVATE).getString("lock", "")!!
+
     }
-
-    fun getAccount(context: Context): String {
-        context.getSharedPreferences("config", ComponentActivity.MODE_PRIVATE)
-            .getString("account", null)
-        return account
-    }
-
-    fun getPassword(): String {
-        return password
-    }
-
-    fun getToken(): String {
-        return token
-    }
-
-    fun getLevel(): UserLevel {
-        return level
-    }
-
-    fun getLock(context: Context): String? {
-        return context.getSharedPreferences("config", ComponentActivity.MODE_PRIVATE)
-            .getString("password", "")
-    }
-
-}
-
-fun main() {
-    val userConfig = UserConfig()
 }
 
 enum class UserLevel {
@@ -51,3 +26,4 @@ enum class UserLevel {
     GENERAL,
     GUEST
 }
+

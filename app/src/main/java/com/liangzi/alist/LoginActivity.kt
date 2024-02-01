@@ -8,6 +8,7 @@ import com.hjq.permissions.OnPermissionCallback
 import com.hjq.permissions.Permission
 import com.hjq.permissions.XXPermissions
 import com.liangzi.alist.databinding.ActivityLoginBinding
+import com.liangzi.alist.tool.UserConfig
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -19,6 +20,7 @@ class LoginActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding!!.root)
+        UserConfig.init(this)
         XXPermissions.with(this)
             // 申请单个权限
             .permission(Permission.WRITE_EXTERNAL_STORAGE)
@@ -37,7 +39,11 @@ class LoginActivity : ComponentActivity() {
 
                 override fun onDenied(permissions: MutableList<String>, doNotAskAgain: Boolean) {
                     if (doNotAskAgain) {
-                        Toast.makeText(baseContext, "获取存储权限失败，请手动授予权限", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            baseContext,
+                            "获取存储权限失败，请手动授予权限",
+                            Toast.LENGTH_SHORT
+                        ).show()
                         // 如果是被永久拒绝就跳转到应用权限系统设置页面
                         XXPermissions.startPermissionActivity(baseContext, permissions)
                     } else {
@@ -45,8 +51,8 @@ class LoginActivity : ComponentActivity() {
                     }
                 }
             })
-        val url = getSharedPreferences("config", MODE_PRIVATE).getString("host", null)
-        if (url != null) {
+        val url = UserConfig.host
+        if (url != "") {
             Toast.makeText(this, "已登录", Toast.LENGTH_SHORT).show()
             startActivity(Intent(this, MainActivity::class.java))
             finish()
@@ -80,7 +86,7 @@ class LoginActivity : ComponentActivity() {
                                 .putString("host", host).apply()
                             startActivity(Intent(this, MainActivity::class.java))
                             finish()
-                        }else{
+                        } else {
                             Toast.makeText(this, "该域名未使用原生AList", Toast.LENGTH_SHORT).show()
                         }
                     }

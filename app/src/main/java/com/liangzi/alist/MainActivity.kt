@@ -56,6 +56,7 @@ import com.liangzi.alist.data.请求json
 import com.liangzi.alist.json.getFileJson
 import com.liangzi.alist.json.getListJson
 import com.liangzi.alist.tool.POST
+import com.liangzi.alist.tool.UserConfig
 import com.liangzi.alist.tool.inThread
 import com.liangzi.alist.ui.FileListItem
 import com.liangzi.alist.ui.PopDialog
@@ -84,7 +85,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        host = getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
+        host = UserConfig.host
         Aria.download(this).register()
         Aria.get(this).downloadConfig.setConvertSpeed(false)
         //初始化下载列表
@@ -110,10 +111,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 url = "$host${API().获取文件列表}", data =
                 请求json(
                     path = "/",
-                    getSharedPreferences(
-                        "config",
-                        MODE_PRIVATE
-                    ).getString("password", "")!!
+                    UserConfig.lock
                 )
             )
             val list = getListJson.fromJson(json)
@@ -211,9 +209,8 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                                     val json = POST(
                                         "$host${API().获取文件详情}",
                                         请求json(
-                                            url, getSharedPreferences(
-                                                "config", MODE_PRIVATE
-                                            ).getString("password", "")!!
+                                            url,
+                                            UserConfig.lock
                                         )
                                     )
                                     Log.d("下载json", url + "$host${API().获取文件详情}" + json!!)
@@ -322,9 +319,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                                 url = "$host/api/fs/list", data =
                                 请求json(
                                     path = 当前url.value,
-                                    getSharedPreferences("config", MODE_PRIVATE).getString(
-                                        "password", ""
-                                    )!!
+                                    UserConfig.lock
                                 )
                             )
                             val list = getListJson.fromJson(json)
@@ -393,7 +388,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
     @Composable
     fun MyDialog(onDismiss: () -> Unit) {
         val context = LocalContext.current
-        val host = context.getSharedPreferences("config", MODE_PRIVATE).getString("host", "")!!
+        val host = UserConfig.host
         object : PopDialog() {
             override fun click() {
                 inThread {
@@ -411,7 +406,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                         } else {
                             Toast.makeText(context, "密码正确", Toast.LENGTH_SHORT).show()
                             getSharedPreferences("config", MODE_PRIVATE).edit()
-                                .putString("password", this.password).apply()
+                                .putString("lock", this.password).apply()
                             updateFilesList(list)
                             needPassword.value = false
                         }
@@ -459,9 +454,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                             url = "$host/api/fs/list", data =
                             请求json(
                                 path = 当前url.value,
-                                getSharedPreferences("config", MODE_PRIVATE).getString(
-                                    "password", ""
-                                )!!
+                                UserConfig.lock
                             )
                         )
                         val list = getListJson.fromJson(json)
@@ -555,7 +548,7 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
             }
         }
         //界面重绘
-        compose.invalidate()
+        compose?.invalidate()
     }
 
     override fun onNoSupportBreakPoint(task: DownloadTask?) {
