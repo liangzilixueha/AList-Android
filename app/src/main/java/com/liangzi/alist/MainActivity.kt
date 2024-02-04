@@ -115,10 +115,25 @@ class MainActivity : ComponentActivity(), com.arialyy.aria.core.download.Downloa
                 )
             )
             val list = getListJson.fromJson(json)
-            if (list.message == 需要密码) {
-                needPassword.value = true
-            } else {
-                updateFilesList(list)
+            Log.d("文件列表", json!!)
+            when (list.message) {
+                需要密码 -> {
+                    needPassword.value = true
+                }
+
+                "token is expired" -> {
+                    runOnUiThread {
+                        Toast.makeText(this, "token过期,转为游客模式", Toast.LENGTH_SHORT).show()
+                        needPassword.value = true
+                        getSharedPreferences("config", MODE_PRIVATE).edit().putString("token", "")
+                            .apply()
+                        UserConfig.init(this)
+                    }
+                }
+
+                else -> {
+                    updateFilesList(list)
+                }
             }
         }
         setContent {
